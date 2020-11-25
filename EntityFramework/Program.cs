@@ -11,6 +11,8 @@ using EFSupport;
 
 using DataAccessLayer.CodeFirstModels.Data;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using ConfigurationAssistant;
 
 namespace EntityFramework
 {
@@ -51,7 +53,7 @@ namespace EntityFramework
     //          script-migration
     //      This script can now be tweaked (if necessary) before running it against a PROD database.
     //
-    //      If you want to run thye migration directly against the database, then run the command:
+    //      If you want to run the migration directly against the database, then run the command:
     //          Update-Database  -Context SchoolContext  -verbose
     //      NOTE: Nothing happens if the database is already up to date.
 
@@ -59,37 +61,21 @@ namespace EntityFramework
     {
         static async Task Main(string[] args)
         {
-            // Ask the DBContextFactory to create the desired DbContext object for use for database access
-            DSuiteContext db = DBContextFactory.GetDbContext<DSuiteContext>();
-
-            // Create data to play with
-            await PopulateDummyCars(db, 500);
+            // Create DSuite dummy data to play with
+            await PopulateDummyCars(500);
 
             // Demonstrate the deferred execution POWER of IQueryable!
             // Find a small list of cars that we don't need to page through.
-            IQueryable<Car> fordBunnies = EFCrud.FindMultiple<Car, DSuiteContext>((x) => x.Make=="Ford" && x.Model == "Bunny" && x.Year < 2006);
+            FindMultipleUsingHelperClass();
 
-            // But I DO want to sort them too. Still no DB call here!
-            fordBunnies = fordBunnies.OrderBy(bunny => bunny.Mileage);
+            ///------- Same query using pure LINQ -----------------
+            FindMultipleUsingLINQ();
 
-            // NOW, go ahead and execute the query against the database
-            fordBunnies.DumpData();
-
-            Car newCar = GenerateCar(db);
-
-            // Demonstrate basic CRUD
-            await EFCrud.Create(db, newCar);
-            Car found = await EFCrud.GetByKey(db, newCar);
-            EFCrud.Delete(db,found);
-
-            newCar.CarId = 0;
-
-            // Equivalent code using just linq
-            db.Cars.Add(newCar);
-            await db.SaveChangesAsync();
-            found = (from c in db.Cars where c.CarId == newCar.CarId select c).SingleOrDefault();
-            db.Remove(found);
-            await db.SaveChangesAsync();
+            // Ask the DBContextFactory to create the desired DbContext object for use for database access
+            await CRUDUsingHelperClass();
+      
+            // Equivalent CRUD using just linq
+            await CRUDUsingLINQ();
 
 
             // Demonstrate data PAGING! Construct a pager that specifies the where clause, page size and column order criteria
@@ -155,16 +141,19 @@ namespace EntityFramework
             Console.ReadKey();
         }
 
-        public static async Task PopulateDummyCars(DSuiteContext db, int NumberOfCars)
+        public static async Task PopulateDummyCars(int NumberOfCars)
         {
+            // Ask the DBContextFactory to create the desired DbContext object for use for database access
+            DSuiteContext db = DBContextFactory.GetDbContext<DSuiteContext>();
+
             for (int i = 0; i < NumberOfCars; ++i)
             {
-                Car NewCar = GenerateCar(db);
+                Car NewCar = GenerateCar();
                 await EFCrud.Create(db, NewCar);
             }
         }
 
-        public static Car GenerateCar(DSuiteContext db)
+        public static Car GenerateCar()
         {
             Random _random = new Random();
             int makeIndex = _random.Next(0, 5);
@@ -175,6 +164,72 @@ namespace EntityFramework
             List<string> Models = new List<string> { "Bunny", "Ducky", "Kitty", "Junk", "Cool", "Hot" };
             Car NewCar = new Car { Make = Makes[makeIndex], Model = Models[modelIndex], Year = year, Mileage = mileage };
             return (NewCar);
+        }
+
+        public static void FindMultipleUsingHelperClass()
+        {
+            // Demonstrate the deferred execution POWER of IQueryable!
+            // Find a small list of cars that we don't need to page through.
+            IQueryable<Car> fordBunnies = EFCrud.FindMultiple<Car, DSuiteContext>((x) => x.Make == "Ford" && x.Model == "Bunny" && x.Year < 2006);
+
+            // But I DO want to sort them too. Still no DB call here!
+            fordBunnies = fordBunnies.OrderBy(bunny => bunny.Mileage);
+
+            // NOW, go ahead and execute the query against the database
+            fordBunnies.DumpData();
+        }
+
+        public static void FindMultipleUsingLINQ()
+        {
+            // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
+            // or secrets.json and exposes the IUserConfiguration interface. We use that interface
+            // to retreive the connection string mapped to the DatabaseName.
+            string ConnectionString = ConfigFactory.UserConfiguration.ConnectionString("DSuite");
+
+            DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
+            optionsBuilder.UseSqlServer(ConnectionString);
+            DSuiteContext dSuiteContext = new DSuiteContext(optionsBuilder.Options);
+
+            // Demonstrate the deferred execution POWER of IQueryable!
+            // Find a small list of cars that we don't need to page through.
+            IQueryable<Car> linqFordBunnies = (from c in dSuiteContext.Cars where c.Make == "Ford" && c.Model == "Bunny" && c.Year < 2006 select c);
+
+            // But I DO want to sort them too. Still no DB call here!
+            linqFordBunnies = linqFordBunnies.OrderBy(bunny => bunny.Mileage);
+
+            // NOW, go ahead and execute the query against the database
+            linqFordBunnies.DumpData();
+        }
+
+        public static async Task CRUDUsingHelperClass()
+        {
+            Car newCar = GenerateCar();
+
+            // Demonstrate basic CRUD
+            DSuiteContext db = DBContextFactory.GetDbContext<DSuiteContext>();
+            await EFCrud.Create(db, newCar);
+            Car found = await EFCrud.GetByKey(db, newCar);
+            EFCrud.Delete(db, found);
+        }
+
+        public static async Task CRUDUsingLINQ()
+        {
+            // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
+            // or secrets.json and exposes the IUserConfiguration interface. We use that interface
+            // to retreive the connection string mapped to the DatabaseName.
+            string ConnectionString = ConfigFactory.UserConfiguration.ConnectionString("DSuite");
+
+            DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
+            optionsBuilder.UseSqlServer(ConnectionString);
+            DSuiteContext dSuiteContext = new DSuiteContext(optionsBuilder.Options);
+
+            // Equivalent CRUD using just linq
+            Car newCar = GenerateCar();
+            dSuiteContext.Cars.Add(newCar);
+            await dSuiteContext.SaveChangesAsync();
+            Car found = (from c in dSuiteContext.Cars where c.CarId == newCar.CarId select c).SingleOrDefault();
+            dSuiteContext.Remove(found);
+            await dSuiteContext.SaveChangesAsync();
         }
     }
 

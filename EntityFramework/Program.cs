@@ -16,6 +16,22 @@ using ConfigurationAssistant;
 
 namespace EntityFramework
 {
+    // To help visualize what's in your DBContext, a useful tool is EFCorePowerTools https://github.com/ErikEJ/EFCorePowerTools
+    // You can get it from the visual studio marketplace https://marketplace.visualstudio.com/items?itemName=ErikEJ.EFCorePowerTools
+    // To use this extension, you MUST have the DGML editor component for visual studio loaded. Open the 
+    // Visual Studio Installer and in the "Individual components\Code tools" section, ensure that "DGML Editor" has been checked.
+    // Next select the menu option "Extensions\ManageExtensions" and then search for "EF Core Power Tools". Select that item from
+    // the list and click "Download". Restart visual studio and that extension should start to work.
+    // In order for you to be able to use this tool with a DbContext, you have to ensure that the .csproj file that contains the DbContext
+    // has a package reference to:
+    //              <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.0">
+    //
+    // NOTE: YOU MUST also copy copy appconfig.json file into the project containing the DbContext you're working with. The reason for this
+    //       is that power tools loads your project (.csproj) dynamically to inspect it for DbContext classes. If your main project is the 
+    //       place where you have the appsettings.json file, then powertools won't load it, and you won't have any of your connection string 
+    //       information. This is OK for development because your connection strings will be loaded from some other secure location when running in production.
+    //       To try this out, right click on the "DataAccessLayer" project and select "Ef Core Power Tools\Add DbContext Model Diagram".
+
     // ------------------------ Instructions for Database First -----------------------------
     // To set up the entities in the DataAccessLayer assembly, open the PackageManagerConsole
     // and select the "Default Project" to be "DataAccessLayer". Set this assembly as the startup project.

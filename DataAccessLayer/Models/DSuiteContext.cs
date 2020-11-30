@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 using ConfigurationAssistant;
 
@@ -34,7 +35,10 @@ namespace DataAccessLayer.Models
             {
 #warning We use ConfigurationAssistant to retrieve connection string information from appsettings.json or secrets.json or environment variables. So no hard coded information goes here!
                 IUserConfiguration userConfiguration = ConfigFactory.Initialize<DSuiteContext>();
+           
                 optionsBuilder.UseSqlServer(userConfiguration.ConnectionString(this.DBNameFromContext()));
+                
+//                optionsBuilder.UseSqlServer("Data Source = OPTIMUS; Initial Catalog = School; Persist Security Info = True; User ID = ma; Password=I8well4sure;");
             }
         }
 

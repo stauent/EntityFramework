@@ -25,11 +25,18 @@ namespace EntityFramework
     //  YYY = Your Sql Server User ID
     //  ZZZ = Your Sql Server Password
     //
-    //      Scaffold-DbContext  "Data Source = XXX; Initial Catalog = Dsuit; Persist Security Info = True; User ID = YYY; Password=ZZZ;" Microsoft.EntityFrameworkCore.SqlServer -DataAnnotations -OutputDir D:\Humber\EntityFramework\DataAccessLayer\Models\ 
+    //      Scaffold-DbContext  "Data Source = XXX; Initial Catalog = Dsuite; Persist Security Info = True; User ID = YYY; Password=ZZZ;" Microsoft.EntityFrameworkCore.SqlServer -DataAnnotations -OutputDir D:\Humber\EntityFramework\DataAccessLayer\Models\ 
     //
     // -------------------- Instructions for Code First  ---------------------------------
     //
     //  Setting up migrations:
+    //
+    //      NOTE: The connection string is retrieved using the ConfigFactory helper class. It inspects the "MyProjectSettings" section of the appsettings.json
+    //            file to get configuration data. In order for "secrets.json" to properly work in this environment you must ensure that the DataAccessLayer.csproj
+    //            has copied the "UserSecretsId" section from the main project .csproj file. The reason is that the secrets.json file is only supposed to be used
+    //            in development. So when we run our application under visual studio in development, everything works fine. However, EF Core Migrations runs 
+    //            in "Production" context. So, when migrations are run it that context, it will only read your appsettings.json file and ignore secrets.json. If however, you 
+    //            ensure that the .csproj project containing your DBContext class contains the correct "UserSecretsId" section, then migrations will work properly.
     //
     //      Go to the  Package Manager Console (PMC) and enter: get-help entityframework
     //      This will show you all the powershell commands available related to entity framework.
@@ -56,11 +63,33 @@ namespace EntityFramework
     //      If you want to run the migration directly against the database, then run the command:
     //          Update-Database  -Context SchoolContext  -verbose
     //      NOTE: Nothing happens if the database is already up to date.
+    //
+    //      Now, add a string property to the "Student" class called "MyFavoriteClass".
+    //      Create a migration that will update the database with this new information.
+    //
+    //              Add-Migration SecondMigration -Context SchoolContext
+    //
+    //      The database has not been updated yet. To do that you need to execute the "Update-Database" command
+    //              Update-Database -Context SchoolContext -verbose
+    //
+    //      The migrations infrastructure is smart enough to know which migrations have been applied to the database
+    //      and which have not. So the previous commands will only apply migrations that have not yet been applied.
+    //      At any time you can attempt to apply a specific migration by name:
+    //
+    //          Update-Database -Context SchoolContext -Migration SecondMigration -verbose
+    //
+    //      If the migration has already been applied then you'll see the message:
+    //          "No migrations were applied. The database is already up to date."
 
     class Program
     {
+        private static IUserConfiguration userConfiguration = null;
+
         static async Task Main(string[] args)
         {
+            // Get the configuration needed for this demo. It assumes user secrets defined in the current entry assembly.
+            userConfiguration = ConfigFactory.Initialize();
+
             // Create DSuite dummy data to play with
             await PopulateDummyCars(500);
 
@@ -68,7 +97,7 @@ namespace EntityFramework
             // Find a small list of cars that we don't need to page through.
             FindMultipleUsingHelperClass();
 
-            ///------- Same query using pure LINQ -----------------
+            //------- Same query using pure LINQ -----------------
             FindMultipleUsingLINQ();
 
             // Ask the DBContextFactory to create the desired DbContext object for use for database access
@@ -87,7 +116,7 @@ namespace EntityFramework
                 IQueryable<Car> resultQuery = await EFHelper.QueryEntities<Car, DSuiteContext>(pager);
 
                 // Physically realize the data from the database. The act of enumeration causes the current thread
-                // to block while data is retreived from the database. To perform this asynchronously, use the RealizeData extension.
+                // to block while data is retrieved from the database. To perform this asynchronously, use the RealizeData extension.
                 resultQuery.DumpData();
 
             } while (pager.HasNextPage);
@@ -184,7 +213,7 @@ namespace EntityFramework
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
             // to retreive the connection string mapped to the DatabaseName.
-            string ConnectionString = ConfigFactory.UserConfiguration.ConnectionString("DSuite");
+            string ConnectionString = userConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
             optionsBuilder.UseSqlServer(ConnectionString);
@@ -217,7 +246,7 @@ namespace EntityFramework
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
             // to retreive the connection string mapped to the DatabaseName.
-            string ConnectionString = ConfigFactory.UserConfiguration.ConnectionString("DSuite");
+            string ConnectionString = userConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
             optionsBuilder.UseSqlServer(ConnectionString);

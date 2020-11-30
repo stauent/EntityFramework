@@ -23,7 +23,8 @@ namespace EFSupport
                 // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
                 // or secrets.json and exposes the IUserConfiguration interface. We use that interface
                 // to retreive the connection string mapped to the DatabaseName.
-                string ConnectionString = ConfigFactory.UserConfiguration.ConnectionString(DatabaseName);
+                IUserConfiguration userConfiguration = ConfigFactory.Initialize<T>();
+                string ConnectionString = userConfiguration?.ConnectionString(DatabaseName);
 
                 if(UseLazyLoading)
                     optionsBuilder.UseLazyLoadingProxies();

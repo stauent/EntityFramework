@@ -1,4 +1,5 @@
-﻿using ConfigurationAssistant;
+﻿using System.Diagnostics;
+using ConfigurationAssistant;
 using EFSupport;
 
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,8 @@ namespace DataAccessLayer.CodeFirstModels.Data
             if (!optionsBuilder.IsConfigured)
             {
 #warning We use ConfigurationAssistant to retrieve connection string information from appsettings.json or secrets.json or environment variables. So no hard coded information goes here!
-                optionsBuilder.UseSqlServer(ConfigFactory.UserConfiguration.ConnectionString(this.DBNameFromContext()));
+                IUserConfiguration userConfiguration = ConfigFactory.Initialize<SchoolContext>();
+                optionsBuilder.UseSqlServer(userConfiguration.ConnectionString(this.DBNameFromContext()));
             }
         }
 

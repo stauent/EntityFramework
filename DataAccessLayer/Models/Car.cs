@@ -20,5 +20,6 @@ namespace DataAccessLayer.Models
         public string Model { get; set; }
         public int Year { get; set; }
         public int Mileage { get; set; }
+        public string Junk { get; set; }
     }
 }

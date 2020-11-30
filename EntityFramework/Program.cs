@@ -27,6 +27,18 @@ namespace EntityFramework
     //
     //      Scaffold-DbContext  "Data Source = XXX; Initial Catalog = Dsuite; Persist Security Info = True; User ID = YYY; Password=ZZZ;" Microsoft.EntityFrameworkCore.SqlServer -DataAnnotations -OutputDir D:\Humber\EntityFramework\DataAccessLayer\Models\ 
     //
+    //  NOTE: If you want to start using Migrations on this existing database, you need to perofrm a few steps. First, add your first migration:
+    //
+    //              Add-Migration DSuiteFirstMigration -Context DSuiteContext
+    //
+    //      Now, edit the XXXXXDSuiteFirstMigration.cs file and delete ALL the code inside the "Up" method, but don't delete the "Up" method.
+    //      Next, update the database by running the migration:
+    //
+    //              Update-Database -Context DSuiteContext -verbose
+    //
+    //      This will generate a new table "__EFMigrationsHistory" in your database. From this point forward you can keep your models and database schema
+    //      synchronized by modifying your model, creating a new migration, and then call "Update-Database" (as above).
+    //
     // -------------------- Instructions for Code First  ---------------------------------
     //
     //  Setting up migrations:

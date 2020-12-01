@@ -119,8 +119,11 @@ namespace EFSupport
             return (realizedData);
         }
 
-        public static void DumpData<T>(this IEnumerable<T> ListOfData) where T : class
+        public static void DumpData<T>(this IEnumerable<T> ListOfData, string StartMessage = null) where T : class
         {
+            if(StartMessage != null)
+                Console.WriteLine(StartMessage);
+
             // Physically realize the data from the database. The act of enumeration causes the current thread
             // to block while data is retreived from the database. To perform this asynchronously, use the RealizeData extension.
             var data = ListOfData.ToList();

@@ -1,11 +1,24 @@
 ﻿using System;
 using System.Linq;
 using DataAccessLayer.Models;
+using Microsoft.Extensions.Logging;
 
 namespace EntityFramework
 {
-    class HardCodedCar
+    public class HardCodedCar
     {
+        protected static ILogger<HardCodedCar> logger { get; set; }
+
+        public static ILogger<HardCodedCar> _Logger
+        {
+            get
+            {
+                if(logger == null)
+                    logger = Program.configuredApplication.GetService<ILogger<HardCodedCar>>();
+                return (logger);
+            }
+        }
+
         public static Car Add(Car NewCar, DSuiteContext db)
         {
             try
@@ -15,6 +28,7 @@ namespace EntityFramework
             }
             catch (Exception Err)
             {
+                _Logger.LogError(Err,"Could not add car");
             }
 
             return (NewCar);
@@ -33,6 +47,7 @@ namespace EntityFramework
             }
             catch (Exception Err)
             {
+                _Logger.LogError(Err, "Could not update car");
             }
 
             return (Update);
@@ -73,6 +88,7 @@ namespace EntityFramework
             }
             catch (Exception Err)
             {
+                _Logger.LogError(Err, "Could not delete car");
             }
 
             return (Deleted);

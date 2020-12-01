@@ -4,6 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace EFSupport
 {
@@ -12,6 +14,14 @@ namespace EFSupport
     /// </summary>
     public static class EFCrud
     {
+        private static ILogger _logger;
+
+        public static void InitializeLogger(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+
         /// <summary>
         /// Create a new entity in the database
         /// </summary>
@@ -30,6 +40,7 @@ namespace EFSupport
             }
             catch (Exception Err)
             {
+                _logger?.LogError(Err, "Could not create entity");
             }
 
             return (newEntity);
@@ -57,6 +68,7 @@ namespace EFSupport
             }
             catch (Exception Err)
             {
+                _logger?.LogError(Err, "Could not update entity");
             }
 
             return (updateEntity);
@@ -170,6 +182,7 @@ namespace EFSupport
             }
             catch (Exception Err)
             {
+                _logger?.LogError(Err, "Could not delete entity");
             }
 
             return (Deleted);

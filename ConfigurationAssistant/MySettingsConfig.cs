@@ -87,6 +87,31 @@ namespace ConfigurationAssistant
         public string Value { get; set; }
     }
 
+
+
+
+    public interface IStaticConfigFactory<T> where T : class
+    {
+        IUserConfiguration UserConfiguration { get; }
+    }
+
+    /// <summary>
+    /// Used by dependency injection to call static class ConfigFactory
+    /// to retrieve configuration for type T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class StaticConfigFactory<T> : IStaticConfigFactory<T> where T : class
+    {
+        public IUserConfiguration UserConfiguration => ConfigFactory.Initialize<T>();
+
+        public StaticConfigFactory()
+        {
+        }
+    }
+
+
+
+
     // This application uses user-secrets to hide configuration settings.
     // Values that are NOT secret can be stored in the appsettings.json file in the open.
     // Values that ARE SECRET and should not be known to anyone are stored in a user-secret. Read the following
@@ -174,5 +199,16 @@ namespace ConfigurationAssistant
         /// </summary>
         public static string RuntimeEnvironment = "unknown";
 
+        /// <summary>
+        /// Returns the connection string for the specified database context
+        /// </summary>
+        /// <typeparam name="T">DbContext derived class</typeparam>
+        /// <returns>Connection string associated with the DbContext</returns>
+        public static string ConnectionString<T>() where T : class
+        {
+            IUserConfiguration config = Initialize<T>();
+            string DatabaseName = typeof(T).Name.Replace("Context", "");
+            return config.ConnectionString(DatabaseName);
+        }   
     }
 }

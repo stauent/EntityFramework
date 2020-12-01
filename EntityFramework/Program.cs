@@ -41,7 +41,7 @@ namespace EntityFramework
     //  YYY = Your Sql Server User ID
     //  ZZZ = Your Sql Server Password
     //
-    //      Scaffold-DbContext  "Data Source = XXX; Initial Catalog = Dsuite; Persist Security Info = True; User ID = YYY; Password=ZZZ;" Microsoft.EntityFrameworkCore.SqlServer -DataAnnotations -OutputDir D:\Humber\EntityFramework\DataAccessLayer\Models\ 
+    //      Scaffold-DbContext  "Data Source = XXX; Initial Catalog = DSuite; Persist Security Info = True; User ID = YYY; Password=ZZZ;" Microsoft.EntityFrameworkCore.SqlServer -DataAnnotations -OutputDir D:\Humber\EntityFramework\DataAccessLayer\Models\ 
     //
     //  NOTE: If you want to start using Migrations on this existing database, you need to perofrm a few steps. First, add your first migration:
     //        https://cmatskas.com/ef-core-migrations-with-existing-database-schema-and-data/  

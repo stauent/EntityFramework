@@ -88,30 +88,6 @@ namespace ConfigurationAssistant
     }
 
 
-
-
-    public interface IStaticConfigFactory<T> where T : class
-    {
-        IUserConfiguration UserConfiguration { get; }
-    }
-
-    /// <summary>
-    /// Used by dependency injection to call static class ConfigFactory
-    /// to retrieve configuration for type T
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class StaticConfigFactory<T> : IStaticConfigFactory<T> where T : class
-    {
-        public IUserConfiguration UserConfiguration => ConfigFactory.Initialize<T>();
-
-        public StaticConfigFactory()
-        {
-        }
-    }
-
-
-
-
     // This application uses user-secrets to hide configuration settings.
     // Values that are NOT secret can be stored in the appsettings.json file in the open.
     // Values that ARE SECRET and should not be known to anyone are stored in a user-secret. Read the following
@@ -120,6 +96,30 @@ namespace ConfigurationAssistant
     // HMAC authentication: https://bitoftech.net/2014/12/15/secure-asp-net-web-api-using-api-key-authentication-hmac-authentication/
     public static class ConfigFactory
     {
+        private static object locker = new object();
+        private static Dictionary<string, IUserConfiguration> _userConfiguration = new Dictionary<string, IUserConfiguration>();
+
+        private static void AddUserConfiguration(string AssemblyName, IUserConfiguration UserConfiguration)
+        {
+            lock (locker)
+            {
+                // Ensure key doesn't already exist
+                if(!_userConfiguration.ContainsKey(AssemblyName))
+                    _userConfiguration.Add(AssemblyName, UserConfiguration);
+            }
+        }
+
+        private static IUserConfiguration FindConfiguration(string AssemblyName)
+        {
+            IUserConfiguration userConfiguration = null;
+            lock (locker)
+            {
+                if (_userConfiguration.ContainsKey(AssemblyName))
+                    userConfiguration = _userConfiguration[AssemblyName];
+            }
+
+            return (userConfiguration);
+        }
 
         public static IUserConfiguration GenericInitialize<T>() where T : class
         {
@@ -154,47 +154,56 @@ namespace ConfigurationAssistant
             if (CurrentAssembly == null)
                 CurrentAssembly = Assembly.GetEntryAssembly();
 
-            // NOTE: The order in which we add to the configuration builder will
-            //       determine the order of override. So in this case the settings
-            //       in the "appsettings.json" file are used first, if a user-secret
-            //       with the same name is provided then it will override the value
-            //       in the .json file. And finally, if an environment variable
-            //       with the same name is found then it will override the user-secret.
-            var builder = new ConfigurationBuilder()
-                            .SetBasePath(Directory.GetCurrentDirectory())
-                            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
-            // The appsettings will determine if we want to use user secrets and/or environment variables
-            var initialConfig = builder.Build();
-            bool UseUserSecrets = initialConfig.GetValue<bool>("UseUserSecrets");
-            bool UseEnvironment = initialConfig.GetValue<bool>("UseEnvironment");
-            RuntimeEnvironment = initialConfig.GetValue<string>("RuntimeEnvironment");
-
-            // Override appsettings.json properties with user secrets and/or environment variables.
-            // The UseUserSecrets and UseEnvironment settings in appsettings.json will determine
-            // if these overrides are applied or not.
-            if (UseUserSecrets)
+            string AssemblyName = CurrentAssembly.FullName;
+            retVal = FindConfiguration(AssemblyName);
+            if (retVal == null)
             {
-                try
-                {
-                    builder.AddUserSecrets(CurrentAssembly);
-                }
-                catch (Exception Err)
-                {
-                }
-            }
-            if (UseEnvironment)
-            {
-                builder.AddEnvironmentVariables();
-            }
+                // NOTE: The order in which we add to the configuration builder will
+                //       determine the order of override. So in this case the settings
+                //       in the "appsettings.json" file are used first, if a user-secret
+                //       with the same name is provided then it will override the value
+                //       in the .json file. And finally, if an environment variable
+                //       with the same name is found then it will override the user-secret.
+                var builder = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-            // Build the final configuration
-            IConfigurationRoot configuration = builder.Build();
+                // The appsettings will determine if we want to use user secrets and/or environment variables
+                var initialConfig = builder.Build();
+                bool UseUserSecrets = initialConfig.GetValue<bool>("UseUserSecrets");
+                bool UseEnvironment = initialConfig.GetValue<bool>("UseEnvironment");
+                RuntimeEnvironment = initialConfig.GetValue<string>("RuntimeEnvironment");
 
-            // Bind the configuration properties to the properties in the SettingsConfig object
-            IConfigurationSection myConfiguration = configuration.GetSection("MyProjectSettings");
-            retVal = new SettingsConfig();
-            myConfiguration.Bind(retVal);
+                // Override appsettings.json properties with user secrets and/or environment variables.
+                // The UseUserSecrets and UseEnvironment settings in appsettings.json will determine
+                // if these overrides are applied or not.
+                if (UseUserSecrets)
+                {
+                    try
+                    {
+                        builder.AddUserSecrets(CurrentAssembly);
+                    }
+                    catch (Exception Err)
+                    {
+                    }
+                }
+
+                if (UseEnvironment)
+                {
+                    builder.AddEnvironmentVariables();
+                }
+
+                // Build the final configuration
+                IConfigurationRoot configuration = builder.Build();
+
+                // Bind the configuration properties to the properties in the SettingsConfig object
+                IConfigurationSection myConfiguration = configuration.GetSection("MyProjectSettings");
+                retVal = new SettingsConfig();
+                myConfiguration.Bind(retVal);
+
+                // Save the configuration so we don't have to create it again
+                AddUserConfiguration(AssemblyName, retVal);
+            }
 
             return (retVal);
 

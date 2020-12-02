@@ -42,7 +42,11 @@ namespace ConfigurationAssistant
 
                     services
                         .AddTransient<TApp>()
-                        .AddTransient(typeof(IStaticConfigFactory<>), typeof(StaticConfigFactory<>))
+                        .AddSingleton<IUserConfiguration> (sp =>
+                                {
+                                    IUserConfiguration uesrConfiguration = ConfigFactory.Initialize<TApp>();
+                                    return (uesrConfiguration);
+                                })
                         .BuildServiceProvider();
                 })
                 .ConfigureLogging((hostingContext, logging) =>

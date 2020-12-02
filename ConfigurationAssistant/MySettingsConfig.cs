@@ -120,6 +120,12 @@ namespace ConfigurationAssistant
     // HMAC authentication: https://bitoftech.net/2014/12/15/secure-asp-net-web-api-using-api-key-authentication-hmac-authentication/
     public static class ConfigFactory
     {
+
+        public static IUserConfiguration GenericInitialize<T>() where T : class
+        {
+            return Initialize<T>();
+        }
+
         /// <summary>
         /// Provides the user the opportunity to initialize the user configuration
         /// based on a type T that exists in the same assembly as where the user secret

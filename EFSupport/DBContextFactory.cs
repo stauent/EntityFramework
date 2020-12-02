@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ConfigurationAssistant;
 using Microsoft.EntityFrameworkCore.Proxies;
+using System.Reflection;
 
 namespace EFSupport
 {
@@ -80,6 +81,41 @@ namespace EFSupport
         {
             string DatabaseName = typeof(T).Name.Replace("Context", "");
             return (DatabaseName);
+        }
+
+        public static DbContextOptionsBuilder ConfigureSqlServer<T>(this DbContextOptionsBuilder optionsBuilder) where T : DbContext
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                IUserConfiguration userConfiguration = ConfigFactory.Initialize<T>();
+                string DatabaseName = typeof(T).Name.Replace("Context", "");
+                optionsBuilder.UseSqlServer(userConfiguration.ConnectionString(DatabaseName));
+            }
+
+            return (optionsBuilder);
+        }
+
+        public static DbContextOptionsBuilder ConfigureSqlServer<T>(this T dbContext, DbContextOptionsBuilder optionsBuilder) where T : DbContext
+        {
+            object[] args = { };
+
+            Type o = typeof(ConfigFactory);
+
+            try
+            {
+                MethodInfo mi = o.GetMethod("GenericInitialize");
+                MethodInfo miConstructed = mi.MakeGenericMethod(typeof(T));
+                IUserConfiguration userConfiguration = (IUserConfiguration)miConstructed.Invoke(dbContext, args);
+
+                string DatabaseName = dbContext.DBNameFromContext();
+                optionsBuilder.UseSqlServer(userConfiguration.ConnectionString(DatabaseName));
+
+            }
+            catch (Exception e)
+            {
+            }
+
+            return (optionsBuilder);
         }
 
     }

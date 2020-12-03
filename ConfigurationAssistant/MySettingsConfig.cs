@@ -2,13 +2,22 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
-using Microsoft.Extensions.Configuration.UserSecrets;
 
 namespace ConfigurationAssistant
 {
+
+    public enum EnabledLoggersEnum
+    {
+        None,
+        File,
+        Console,
+        Debug
+    }
+
     public interface IUserConfiguration
     {
         /// <summary>
@@ -25,6 +34,24 @@ namespace ConfigurationAssistant
         /// Secret key used for HMAC authentication
         /// </summary>
         string ApiSecret { get; set; }
+
+        /// <summary>
+        /// If the name of the logger was specified in the configuration
+        /// then true is returned
+        /// </summary>
+        public bool IsLoggerEnabled(EnabledLoggersEnum LoggerType);
+
+        /// <summary>
+        /// Returns true if any kind of logging is enabled
+        /// </summary>
+        /// <returns>true or false</returns>
+        public bool IsLoggingEnabled { get; }
+
+        /// <summary>
+        /// Specifies the location where the log file will be written.
+        /// If empty, then the file will be written in the current executing folder
+        /// </summary>
+        public string LogPath { get; set; }
 
         /// <summary>
         /// Returns the connection string associated with the "DatabaseName"
@@ -50,6 +77,51 @@ namespace ConfigurationAssistant
         /// Secret key used for HMAC authentication
         /// </summary
         public string ApiSecret { get; set; }
+
+        /// <summary>
+        /// If the name of the logger was specified in the configuration
+        /// then true is returned
+        /// </summary>
+        public bool IsLoggerEnabled(EnabledLoggersEnum LoggerType)
+        {
+            string found = EnabledLoggers.Find(loggerName => loggerName == LoggerType.ToString());
+            return (found != null);
+        }
+
+        /// <summary>
+        /// Returns true if any kind of logging is enabled
+        /// </summary>
+        /// <returns>true or false</returns>
+        public bool IsLoggingEnabled
+        {
+            get
+            {
+                bool enabled = true;
+                if (EnabledLoggers != null && EnabledLoggers.Count() > 0)
+                {
+                    if (IsLoggerEnabled(EnabledLoggersEnum.None))
+                        enabled = false;
+                }
+
+                return (enabled);
+            }
+        }
+
+        /// <summary>
+        /// Specifies the location where the log file will be written.
+        /// If empty, then the file will be written in the current executing folder
+        /// </summary>
+        public string LogPath { get; set; }
+
+        /// <summary>
+        /// Allows you to specify which loggers (if any) are to be used at runtime.
+        /// The available options are  "File", "Console", "Debug", "None". If "None"
+        /// is specified or no option is provided at all, then no logging will occur.
+        /// Otherwise one or more of the options  "File", "Console", "Debug" can be used
+        /// together. "Console" logs to the console window. "Debug" logs to the visual studio
+        /// debug output window. "File" logs to a file. 
+        /// </summary>
+        public List<string> EnabledLoggers { get; set; }
 
         /// <summary>
         /// Every Name:Value pair in the MyProjectSettings:ConnectionStrings
@@ -104,7 +176,7 @@ namespace ConfigurationAssistant
             lock (locker)
             {
                 // Ensure key doesn't already exist
-                if(!_userConfiguration.ContainsKey(AssemblyName))
+                if (!_userConfiguration.ContainsKey(AssemblyName))
                     _userConfiguration.Add(AssemblyName, UserConfiguration);
             }
         }
@@ -224,6 +296,6 @@ namespace ConfigurationAssistant
             IUserConfiguration config = Initialize<T>();
             string DatabaseName = typeof(T).Name.Replace("Context", "");
             return config.ConnectionString(DatabaseName);
-        }   
+        }
     }
 }

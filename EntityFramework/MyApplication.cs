@@ -19,23 +19,17 @@ namespace EntityFramework
 {
     public class MyApplication 
     {
-        private readonly IUserConfiguration _userConfiguration = null;
-        private readonly ILogger _logger;
-
+        private readonly IApplicationRequirements<MyApplication> _requirements;
 
         /// <summary>
         /// Application initialization. 
         /// </summary>
-        /// <param name="logger">Used to log information at runtime. Supplied by DI</param>
-        /// <param name="userConfiguration">User configuration from appsettings.json/secrets.json. Supplied by DI</param>
-        public MyApplication(ILogger<MyApplication> logger, IUserConfiguration userConfiguration)
+        /// <param name="IApplicationRequirements">Supplied by DI. All required interfaces</param>
+        public MyApplication(IApplicationRequirements<MyApplication> requirements)
         {
-            _logger = logger;
+            _requirements = requirements;
 
-            EFCrud.InitializeLogger(_logger);
-
-            // Get the configuration needed for this demo. It assumes user secrets defined in the current entry assembly.
-            _userConfiguration = userConfiguration;
+            EFCrud.InitializeLogger(_requirements.ApplicationLogger);
         }
 
         /// <summary>
@@ -44,11 +38,11 @@ namespace EntityFramework
         /// <returns></returns>
         internal async Task Run()
         {
-            _logger.LogInformation("Application {applicationEvent} at {dateTime}", "Started", DateTime.UtcNow);
+            $"Application Started at {DateTime.UtcNow}".TraceInformation();
 
             await DoWork();
 
-            _logger.LogInformation("Application {applicationEvent} at {dateTime}", "Ended", DateTime.UtcNow);
+            $"Application Ended at {DateTime.UtcNow}".TraceInformation();
 
             Console.WriteLine("PRESS <ENTER> TO EXIT");
             Console.ReadKey();
@@ -179,7 +173,7 @@ namespace EntityFramework
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
             // to retreive the connection string mapped to the DatabaseName.
-            string ConnectionString = _userConfiguration.ConnectionString("DSuite");
+            string ConnectionString = _requirements.UserConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
             optionsBuilder.UseSqlServer(ConnectionString);
@@ -212,7 +206,7 @@ namespace EntityFramework
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
             // to retreive the connection string mapped to the DatabaseName.
-            string ConnectionString = _userConfiguration.ConnectionString("DSuite");
+            string ConnectionString = _requirements.UserConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
             optionsBuilder.UseSqlServer(ConnectionString);

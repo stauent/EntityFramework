@@ -1,9 +1,9 @@
-﻿using System.IO;
-using System.Reflection;
-using log4net;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+using System.IO;
 
 
 namespace ConfigurationAssistant
@@ -12,7 +12,7 @@ namespace ConfigurationAssistant
     /// Details on how the app "TApp" was created and configured
     /// </summary>
     /// <typeparam name="TApp">The type of the application that was configured</typeparam>
-    public class ConfigurationResults<TApp> where TApp : class
+    public class ConfigurationResults<TApp> where TApp : class 
     {
         public IHostBuilder builder { get; set; }
         public IHost myHost { get; set; }
@@ -37,54 +37,60 @@ namespace ConfigurationAssistant
         {
             IUserConfiguration userConfiguration = ConfigFactory.Initialize<TApp>();
 
-            IHostBuilder hostBuilder = Host.CreateDefaultBuilder(args)
+            IHostBuilder hostBuilder =  Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostingContext, services) =>
                 {
                     localServiceConfiguration?.Invoke(hostingContext, services);
 
                     services
                         .AddTransient<TApp>()
-                        .AddSingleton<IUserConfiguration>(sp =>
-                        {
-                            return (userConfiguration);
-                        })
+                        .AddSingleton<IApplicationRequirements<TApp>, ApplicationRequirements<TApp>>()
+                        .AddSingleton<IUserConfiguration> (sp =>
+                                {
+                                    return (userConfiguration);
+                                })
                         .BuildServiceProvider();
                 })
                 .ConfigureLogging((hostingContext, logging) =>
                 {
-                    logging.ClearProviders();
-
-                    if (userConfiguration.IsLoggingEnabled)
-                    {
-                        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-
-                        if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.Debug))
-                            logging.AddDebug();
-
-                        if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.Console))
-                            logging.AddConsole();
-
-                        if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.File))
-                        {
-                            // Must set the log name prior to adding Log4Net because it must know this value
-                            // before it loads the config file. It does pattern matching and substitution on the filename.
-                            string logName = $"{typeof(TApp).Name}.log";
-                            if (!string.IsNullOrEmpty(userConfiguration.LogPath))
-                            {
-                                if (!Directory.Exists(userConfiguration.LogPath))
-                                {
-                                    Directory.CreateDirectory(userConfiguration.LogPath);
-                                }
-
-                                logName = $"{userConfiguration.LogPath}\\{logName}";
-                            }
-                            log4net.GlobalContext.Properties["LogName"] = logName;
-                            logging.AddLog4Net("log4net.config");
-                        }
-                    }
+                    ConfigureCustomLogging(hostingContext, logging, userConfiguration);
                 });
 
             return (hostBuilder);
+        }
+
+        public static void ConfigureCustomLogging(HostBuilderContext hostingContext, ILoggingBuilder logging, IUserConfiguration userConfiguration)
+        {
+            logging.ClearProviders();
+
+            if (userConfiguration.IsLoggingEnabled)
+            {
+                logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
+
+                if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.Debug))
+                    logging.AddDebug();
+
+                if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.Console))
+                    logging.AddConsole();
+
+                if (userConfiguration.IsLoggerEnabled(EnabledLoggersEnum.File))
+                {
+                    // Must set the log name prior to adding Log4Net because it must know this value
+                    // before it loads the config file. It does pattern matching and substitution on the filename.
+                    string logName = $"{userConfiguration.LogName}.log";
+                    if (!string.IsNullOrEmpty(userConfiguration.LogPath))
+                    {
+                        if (!Directory.Exists(userConfiguration.LogPath))
+                        {
+                            Directory.CreateDirectory(userConfiguration.LogPath);
+                        }
+
+                        logName = $"{userConfiguration.LogPath}\\{logName}";
+                    }
+                    log4net.GlobalContext.Properties["LogName"] = logName;
+                    logging.AddLog4Net("log4net.config");
+                }
+            }
         }
 
         /// <summary>
@@ -110,6 +116,13 @@ namespace ConfigurationAssistant
             return (config);
         }
 
+        public static IApplicationRequirements<TApp> CreateApplicationRequirements<TApp>(string[] args, ConfigureLocalServices<TApp> localServiceConfiguration = null) where TApp : class
+        {
+            ConfigurationResults<TApp> config = new ConfigurationResults<TApp>();
+            config.builder = CreateHostBuilder<TApp>(args, localServiceConfiguration);
+            config.myHost = config.builder.Build();
+            IApplicationRequirements<TApp> requirements = config.myHost.Services.GetRequiredService<IApplicationRequirements<TApp>>();
+            return (requirements);
+        }
     }
-
 }

@@ -54,6 +54,12 @@ namespace ConfigurationAssistant
         public string LogPath { get; set; }
 
         /// <summary>
+        /// Specifies the log file name.
+        /// If empty, then the name of the app will be used
+        /// </summary>
+        public string LogName { get; set; }
+
+        /// <summary>
         /// Returns the connection string associated with the "DatabaseName"
         /// </summary>
         /// <param name="DatabaseName">Name of database we want to get the connection string for</param>
@@ -112,6 +118,12 @@ namespace ConfigurationAssistant
         /// If empty, then the file will be written in the current executing folder
         /// </summary>
         public string LogPath { get; set; }
+
+        /// <summary>
+        /// Specifies the log file name.
+        /// If empty, then the name of the app will be used
+        /// </summary>
+        public string LogName { get; set; }
 
         /// <summary>
         /// Allows you to specify which loggers (if any) are to be used at runtime.
@@ -298,4 +310,5 @@ namespace ConfigurationAssistant
             return config.ConnectionString(DatabaseName);
         }
     }
+
 }

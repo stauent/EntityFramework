@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace DataAccessLayer.CodeFirstModels
 {
@@ -12,6 +13,7 @@ namespace DataAccessLayer.CodeFirstModels
         public DateTime EnrollmentDate { get; set; }
         public string FavoriteCourse { get; set; }
 
+        [JsonIgnore]
         public virtual ICollection<Enrollment> Enrollments { get; set; }
     }
 }

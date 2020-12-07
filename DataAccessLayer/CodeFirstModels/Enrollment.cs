@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace DataAccessLayer.CodeFirstModels
 {
@@ -17,6 +18,7 @@ namespace DataAccessLayer.CodeFirstModels
         public virtual Grade? Grade { get; set; }
 
         public virtual Course Course { get; set; }
+
         public virtual Student Student { get; set; }
     }
 }

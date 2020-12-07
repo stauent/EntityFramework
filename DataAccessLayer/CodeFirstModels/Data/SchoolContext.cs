@@ -31,7 +31,6 @@ namespace DataAccessLayer.CodeFirstModels.Data
             if (!optionsBuilder.IsConfigured)
             {
 #warning We use ConfigurationAssistant to retrieve connection string information from appsettings.json or secrets.json or environment variables. So no hard coded information goes here!
-                //optionsBuilder.ConfigureSqlServer<SchoolContext>();
                 this.ConfigureSqlServer(optionsBuilder);
             }
         }

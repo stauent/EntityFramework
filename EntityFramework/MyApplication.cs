@@ -30,6 +30,7 @@ namespace EntityFramework
             _requirements = requirements;
 
             EFCrud.InitializeLogger(_requirements.ApplicationLogger);
+            EFHelper.InitializeLogger(_requirements.ApplicationLogger);
         }
 
         /// <summary>
@@ -118,7 +119,7 @@ namespace EntityFramework
             EFCrud.Delete(schoolContext, newStudent);
 
             // Find all classes a student is enrolled into. NOTE:!!!! DbContextFactory uses "UseLazyLoadingProxies"
-            // to ensure chold properties "Student" and "Course" are lazy loaded when their properties are accessed.
+            // to ensure that properties "Student" and "Course" are lazy loaded when their properties are accessed.
             // If that were not the case, then you've have to manually load the data based on ID values.
             newStudent = EFCrud.FindSingle<Student, SchoolContext>(x => x.LastName == "Alonso" && x.FirstMidName == "Meredith");
             IQueryable<Enrollment> enrolledList = EFCrud.FindMultiple<Enrollment, SchoolContext>(x => x.StudentID == newStudent.ID);
@@ -172,7 +173,7 @@ namespace EntityFramework
         {
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
-            // to retreive the connection string mapped to the DatabaseName.
+            // to retrieve the connection string mapped to the DatabaseName.
             string ConnectionString = _requirements.UserConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
@@ -205,7 +206,7 @@ namespace EntityFramework
         {
             // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
             // or secrets.json and exposes the IUserConfiguration interface. We use that interface
-            // to retreive the connection string mapped to the DatabaseName.
+            // to retrieve the connection string mapped to the DatabaseName.
             string ConnectionString = _requirements.UserConfiguration.ConnectionString("DSuite");
 
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();

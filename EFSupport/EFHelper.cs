@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using ConfigurationAssistant;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace EFSupport
 {
@@ -14,6 +15,13 @@ namespace EFSupport
     /// </summary>
     public static class EFHelper
     {
+        private static ILogger _logger;
+
+        public static void InitializeLogger(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         /// <summary>
         /// Extension method to return the name of a property used in a lambda expression.
         ///     e.g.   X => X.LastName
@@ -125,17 +133,12 @@ namespace EFSupport
                 Console.WriteLine(StartMessage);
 
             // Physically realize the data from the database. The act of enumeration causes the current thread
-            // to block while data is retreived from the database. To perform this asynchronously, use the RealizeData extension.
+            // to block while data is retrieved from the database. To perform this asynchronously, use the RealizeData extension.
             var data = ListOfData.ToList();
-            Newtonsoft.Json.JsonSerializerSettings jSettings = new Newtonsoft.Json.JsonSerializerSettings()
-            {
-                ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore, MaxDepth = 1
-            };
 
             foreach (var entity in data)
             {
-                string serialized = JsonConvert.SerializeObject(entity, Formatting.Indented, jSettings);
-                Console.WriteLine(serialized);
+                entity.TraceInformation();
             }
         }
 

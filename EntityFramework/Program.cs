@@ -8,6 +8,7 @@ using EFSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
+using DataAccessLayer;
 using DataAccessLayer.CodeFirstModels;
 using DataAccessLayer.Repositories;
 
@@ -119,10 +120,14 @@ namespace EntityFramework
 
         public static void ConfigureLocalServices(HostBuilderContext hostingContext, IServiceCollection services)
         {
-            services.AddDbContextScoped<DSuiteContext>();
-            services.AddDbContextScoped<SchoolContext>();
-            services.AddScoped<ICarRepository, CarRepository>();
-            services.AddScoped<ICourseRepository, CourseRepository>();
+            // Forces the DataAccessLayer to load into the current app domain
+            // so that we have access to the DbContext objects via reflection.
+            AssemblyLoader.EnsureLoaded();
+
+            // Now that the DataAccessLayer is loaded, we can register all DbContext classes 
+            // into the IOC container and also registers all XXXXXRepository classes
+            // that have be derived from GenericRepository.
+            services.AddAllDbContextAndRepositoryTypes(true);
         }
     }
 

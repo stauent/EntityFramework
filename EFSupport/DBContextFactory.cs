@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using ConfigurationAssistant;
 using Microsoft.EntityFrameworkCore.Proxies;
@@ -10,6 +11,7 @@ namespace EFSupport
 {
     public static class DBContextFactory
     {
+
         /// <summary>
         /// e.g. AddDbContextScoped SchoolContext
         /// </summary>

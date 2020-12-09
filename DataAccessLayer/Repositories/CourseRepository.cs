@@ -11,7 +11,7 @@ using System.Text;
 namespace DataAccessLayer.Repositories
 {
 
-    public interface ICourseRepository
+    public interface ICourseRepository 
     {
         Course GetById(int id);
         IEnumerable<Course> GetAll();

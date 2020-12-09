@@ -7,7 +7,7 @@ using EFSupport;
 
 namespace DataAccessLayer.Repositories
 {
-    public interface ICarRepository
+    public interface ICarRepository 
     {
         Car GetById(int id);
         IEnumerable<Car> GetAll();

@@ -43,6 +43,8 @@ namespace EntityFramework
         private readonly SchoolContext _school;
         private readonly ICarRepository _cars;
         private readonly ICourseRepository _courses;
+        private readonly IStudentRepository _students;
+        private readonly IEnrollmentRepository _enrollments;
 
         /// <summary>
         /// Application initialization.
@@ -52,13 +54,21 @@ namespace EntityFramework
         /// <param name="schoolContext">DbContext for School database</param>
         /// <param name="cars">ICarRepository Example of using repository pattern</param>
         /// <param name="courses">ICourseRepository Example of using repository pattern</param>
-        public MyApplication(IApplicationRequirements<MyApplication> requirements, DSuiteContext dSuiteContext, SchoolContext schoolContext, ICarRepository cars, ICourseRepository courses)
+        public MyApplication(IApplicationRequirements<MyApplication> requirements, 
+            DSuiteContext dSuiteContext, 
+            SchoolContext schoolContext, 
+            ICarRepository cars, 
+            ICourseRepository courses, 
+            IStudentRepository students, 
+            IEnrollmentRepository enrollments)
         {
             _requirements = requirements;
             _dSuite = dSuiteContext;
             _school = schoolContext;
             _cars = cars;
             _courses = courses;
+            _students = students;
+            _enrollments = enrollments;
 
             EFCrud.InitializeLogger(_requirements.ApplicationLogger);
             EFHelper.InitializeLogger(_requirements.ApplicationLogger);

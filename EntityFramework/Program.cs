@@ -1,5 +1,15 @@
-﻿using ConfigurationAssistant;
+﻿using System;
+using System.Collections.Generic;
+using ConfigurationAssistant;
 using System.Threading.Tasks;
+using DataAccessLayer.CodeFirstModels.Data;
+using DataAccessLayer.Models;
+using EFSupport;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.Linq;
+using DataAccessLayer.CodeFirstModels;
+using DataAccessLayer.Repositories;
 
 namespace EntityFramework
 {
@@ -103,8 +113,16 @@ namespace EntityFramework
 
         static async Task Main(string[] args)
         {
-            configuredApplication = ConsoleHostBuilderHelper.CreateApp<MyApplication>(args);
+            configuredApplication = ConsoleHostBuilderHelper.CreateApp<MyApplication>(args, ConfigureLocalServices);
             await configuredApplication.myService.Run();
+        }
+
+        public static void ConfigureLocalServices(HostBuilderContext hostingContext, IServiceCollection services)
+        {
+            services.AddDbContextScoped<DSuiteContext>();
+            services.AddDbContextScoped<SchoolContext>();
+            services.AddScoped<ICarRepository, CarRepository>();
+            services.AddScoped<ICourseRepository, CourseRepository>();
         }
     }
 

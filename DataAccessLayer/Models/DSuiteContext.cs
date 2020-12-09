@@ -9,7 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Models
 {
-    public partial class DSuiteContext : DbContext
+    public interface IDSuiteContext
+    {
+        DbSet<Car> Cars { get; set; }
+    }
+
+    public partial class DSuiteContext : DbContext, IDSuiteContext
     {
         /// <summary>
         /// NOTE:!!!!!!! Both parameterless and DbContextOptions constructors MUST exist or Migarations will FAIL!!!!!

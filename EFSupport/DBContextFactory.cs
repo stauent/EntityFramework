@@ -3,11 +3,43 @@ using Microsoft.EntityFrameworkCore;
 using ConfigurationAssistant;
 using Microsoft.EntityFrameworkCore.Proxies;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EFSupport
 {
     public static class DBContextFactory
     {
+        /// <summary>
+        /// e.g. AddDbContextScoped SchoolContext
+        /// </summary>
+        /// <typeparam name="TImplementation"></typeparam>
+        /// <param name="services"></param>
+        /// <param name="UseLazyLoading"></param>
+        public static void AddDbContextScoped<TImplementation>(this IServiceCollection services, bool UseLazyLoading = true) where TImplementation : DbContext
+        {
+            services.AddDbContext<TImplementation>(options =>
+            {
+                try
+                {
+                    // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
+                    // or secrets.json and exposes the IUserConfiguration interface. We use that interface
+                    // to retrieve the connection string mapped to the DatabaseName.
+                    IUserConfiguration userConfiguration = ConfigFactory.Initialize<TImplementation>();
+                    string databaseName = typeof(TImplementation).Name.Replace("Context", "");
+                    string connectionString = userConfiguration?.ConnectionString(databaseName);
+
+                    if (UseLazyLoading)
+                        options.UseLazyLoadingProxies();
+
+                    options.UseSqlServer(connectionString);
+
+                }
+                catch { }
+            }, ServiceLifetime.Scoped);
+
+        }
+
         /// <summary>
         /// Creates a DbContextOptions object of type T
         /// </summary>
@@ -61,7 +93,7 @@ namespace EFSupport
         public static T GetDbContext<T>(bool UseLazyLoading = true) where T : DbContext
         {
             string DatabaseName = typeof(T).Name.Replace("Context", "");
-            return (GetDbContext<T>(DatabaseName));
+            return (GetDbContext<T>(DatabaseName, UseLazyLoading));
         }
 
         public static T GetMigrationsDbContext<T>() where T : DbContext

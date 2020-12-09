@@ -8,7 +8,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.CodeFirstModels.Data
 {
-    public partial class SchoolContext : DbContext
+    public interface ISchoolContext
+    {
+        DbSet<Course> Courses { get; set; }
+        DbSet<Enrollment> Enrollments { get; set; }
+        DbSet<Student> Students { get; set; }
+    }
+
+    public partial class SchoolContext : DbContext, ISchoolContext
     {
         /// <summary>
         /// NOTE:!!!!!!! Both parameterless and DbContextOptions constructors MUST exist or Migarations will FAIL!!!!!

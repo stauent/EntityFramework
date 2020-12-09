@@ -30,7 +30,7 @@ namespace EFSupport
         /// <param name="db">Reference to your DbContext</param>
         /// <param name="newEntity">Reference to the entity you want to add into the database</param>
         /// <returns>The created entity from the database</returns>
-        public static async Task<T> Create<T, DT>(DT db, T newEntity) where DT : DbContext where T : class
+        public static async Task<T> Create<T, DT>(this DT db, T newEntity) where DT : DbContext where T : class
         {
             try
             {
@@ -46,6 +46,7 @@ namespace EFSupport
             return (newEntity);
         }
 
+
         /// <summary>
         /// Updates an entity in the database with modifications provided in the parameter
         /// </summary>
@@ -54,7 +55,7 @@ namespace EFSupport
         /// <param name="db">Reference to your DbContext</param>
         /// <param name="updateEntity">Reference to the entity you want to update in the database</param>
         /// <returns>The updated entity</returns>
-        public static async Task<T> Update<T, DT>(DT db, T updateEntity) where DT : DbContext where T : class
+        public static async Task<T> Update<T, DT>(this DT db, T updateEntity) where DT : DbContext where T : class
         {
             try
             {
@@ -128,14 +129,14 @@ namespace EFSupport
         /// </summary>
         /// <typeparam name="T">Entity of type T</typeparam>
         /// <typeparam name="DT">Your DbContext type</typeparam>
+        /// <param name="db">DbContext</param>
         /// <param name="WhereClause">LINQ expression used to filter the data</param>
         /// <param name="OrderBy">LINQ expression used to order the data</param>
         /// <param name="Ascending">Order is ascending if true, else descending</param>
         /// <param name="Take">Max number of records to return</param>
         /// <returns>IQueryable of T. This means that the DB is not accessed until you start to enumerate the result.</returns>
-        public static IQueryable<T> FindMultiple<T, DT>(Expression<Func<T, bool>> WhereClause, Expression<Func<T, object>> OrderBy = null, bool Ascending = true, int Take = 50) where DT : DbContext where T : class
+        public static IQueryable<T> FindMultiple<T, DT>(this DT db, Expression<Func<T, bool>> WhereClause, Expression<Func<T, object>> OrderBy = null, bool Ascending = true, int Take = 50) where DT : DbContext where T : class
         {
-            DT db = DBContextFactory.GetDbContext<DT>();
             DbSet<T> dbSet = db.Set<T>();
             IQueryable<T> found = (from entity in dbSet select entity).Where(WhereClause);
             if (OrderBy != null)
@@ -154,11 +155,11 @@ namespace EFSupport
         /// </summary>
         /// <typeparam name="T">Entity of type T</typeparam>
         /// <typeparam name="DT">Your DbContext type</typeparam>
+        /// <param name="db">DbContext</param>
         /// <param name="WhereClause">LINQ expression used to filter the data</param>
         /// <returns>The matching entity is returned</returns>
-        public static T FindSingle<T, DT>(Expression<Func<T, bool>> WhereClause) where DT : DbContext where T : class
+        public static T FindSingle<T, DT>(this DT db, Expression<Func<T, bool>> WhereClause) where DT : DbContext where T : class
         {
-            DT db = DBContextFactory.GetDbContext<DT>();
             DbSet<T> dbSet = db.Set<T>();
             T found = (from entity in dbSet select entity).SingleOrDefault(WhereClause);
             return (found);
@@ -172,7 +173,7 @@ namespace EFSupport
         /// <param name="db">Reference to your DbContext</param>
         /// <param name="keyValues">object array containing the key values you're searching for</param>
         /// <returns>The deleted entity</returns>
-        public static async Task<T> Delete<T, DT>(DT db, params object[] keyValues) where DT : DbContext where T : class
+        public static async Task<T> Delete<T, DT>(this DT db, params object[] keyValues) where DT : DbContext where T : class
         {
             T Deleted = null;
             try
@@ -196,7 +197,7 @@ namespace EFSupport
         /// <param name="db">Reference to your DbContext</param>
         /// <param name="ToDelete">Reference to the entity you want to delete</param>
         /// <returns>The deleted entity</returns>
-        public static T Delete<T, DT>(DT db, T ToDelete) where DT : DbContext where T : class
+        public static T Delete<T, DT>(this DT db, T ToDelete) where DT : DbContext where T : class
         {
             T Deleted = null;
             if (ToDelete != null)

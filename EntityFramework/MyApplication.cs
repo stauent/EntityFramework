@@ -7,27 +7,58 @@ using DataAccessLayer.Models;
 using EFSupport;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DataAccessLayer.Repositories;
 
 namespace EntityFramework
 {
+    // NOTE: This constructor is set up to simply demonstrate how we can get various parameters
+    //       using dependency injection. This is not necessarily an example of how you should write code.
+    //       One of the reasons its structure this way is so that we can examine/discuss the pros
+    //       and cons of injecting repository interfaces vs. DbContext objects.  While the repository
+    //       interfaces help support unit testing, we can still achieve the same goal using "InMemory"
+    //       database (dotnet add package Microsoft.EntityFrameworkCore.InMemory)
+    //       https://entityframeworkcore.com/providers-inmemory
+    //
+    //       Because it's difficult to mock out a DbContext, EF Core supports "UseInMemoryDatabase"
+    //       https://entityframeworkcore.com/knowledge-base/47553878/mocking-entity-framework-core-context
+    //
+    //       In order for the GenericRepository to be "really" useful, all DbSet entities should use
+    //       the same key type (uniqueidentifier or int) and all classes should use the same key
+    //       property name of "id". Then, GenericRepository would not have to be
+    //       an abstract class and could a generic implementation of GetById.
+    //       This would also simplify the registration of the all repositories because then
+    //       we could use:
+    //             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+    //
     public class MyApplication 
     {
         private readonly IApplicationRequirements<MyApplication> _requirements;
 
+        private readonly DSuiteContext _dSuite;
+        private readonly SchoolContext _school;
+        private readonly ICarRepository _cars;
+        private readonly ICourseRepository _courses;
+
         /// <summary>
-        /// Application initialization. 
+        /// Application initialization.
         /// </summary>
-        /// <param name="IApplicationRequirements">Supplied by DI. All required interfaces</param>
-        public MyApplication(IApplicationRequirements<MyApplication> requirements)
+        /// <param name="requirements">IApplicationRequirements Supplied by DI. All required interfaces</param>
+        /// <param name="dSuiteContext">DbContext for DSuite database</param>
+        /// <param name="schoolContext">DbContext for School database</param>
+        /// <param name="cars">ICarRepository Example of using repository pattern</param>
+        /// <param name="courses">ICourseRepository Example of using repository pattern</param>
+        public MyApplication(IApplicationRequirements<MyApplication> requirements, DSuiteContext dSuiteContext, SchoolContext schoolContext, ICarRepository cars, ICourseRepository courses)
         {
             _requirements = requirements;
+            _dSuite = dSuiteContext;
+            _school = schoolContext;
+            _cars = cars;
+            _courses = courses;
 
             EFCrud.InitializeLogger(_requirements.ApplicationLogger);
             EFHelper.InitializeLogger(_requirements.ApplicationLogger);
@@ -60,7 +91,7 @@ namespace EntityFramework
 
             // Demonstrate the deferred execution POWER of IQueryable!
             // Find a small list of cars that we don't need to page through.
-            FindMultipleUsingHelperClass();
+            FindMultipleUsingHelperClass(_dSuite);
 
             //------- Same query using pure LINQ -----------------
             FindMultipleUsingLINQ();
@@ -92,42 +123,60 @@ namespace EntityFramework
             EFCrud.DeleteAll<Car, DSuiteContext>();
 
             //-------------------- Use Code First ----------------------
-            // Ask the DBContextFactory to create the desired DbContext object for use for database access
+            // Ask the DBContextFactory to create the desired DbContext object for use for database access.
+            // NOTE: This is for demo purposes only! The DbContexts for this application were injected
+            //       in the constructor, and this is how you would "USUALLY" access the DbContext to work with.
             SchoolContext schoolContext = DBContextFactory.GetDbContext<SchoolContext>();
 
             DbInitializer.Initialize(schoolContext);
 
-            IQueryable<Student> studentList = EFCrud.FindMultiple<Student, SchoolContext>((x) => x.LastName.StartsWith("A"), (x) => x.LastName, false);
+            IQueryable<Student> studentList = schoolContext.FindMultiple<Student, SchoolContext>((x) => x.LastName.StartsWith("A"), (x) => x.LastName, false);
             studentList.DumpData($"\r\n\r\n==============EFCrud.FindMultiple==============================");
 
             // Demonstrate basic CRUD with related tables
             Student newStudent = new Student { FirstMidName = "Tony", LastName = "Franklin", EnrollmentDate = DateTime.Parse("2009-09-09") };
-            await EFCrud.Create(schoolContext, newStudent);
+            await schoolContext.Create(newStudent);
             Course newCourse = new Course { CourseID = 5022, Title = "Advanced C#", Credits = 4 };
-            await EFCrud.Create(schoolContext, newCourse);
+            await schoolContext.Create(newCourse);
             Enrollment newEnrollment = new Enrollment { StudentID = newStudent.ID, CourseID = newCourse.CourseID, Grade = Grade.A };
-            await EFCrud.Create(schoolContext, newEnrollment);
+            await schoolContext.Create(newEnrollment);
 
             // Now find a specific enrollment. 
-            Enrollment enrollmentFound = EFCrud.FindSingle<Enrollment, SchoolContext>(x => x.EnrollmentID == newEnrollment.EnrollmentID);
+            Enrollment enrollmentFound = schoolContext.FindSingle<Enrollment, SchoolContext>(x => x.EnrollmentID == newEnrollment.EnrollmentID);
             string grade = enrollmentFound?.Grade.ToString() ?? "??";
             Console.WriteLine($"Student({enrollmentFound.Student.FirstMidName} {enrollmentFound.Student.LastName}) Course({enrollmentFound.Course.Title}) Grade({grade})");
 
             // Delete the student that was just added
-            EFCrud.Delete(schoolContext, newEnrollment);
-            EFCrud.Delete(schoolContext, newCourse);
-            EFCrud.Delete(schoolContext, newStudent);
+            schoolContext.Delete(newEnrollment);
+            schoolContext.Delete(newCourse);
+            schoolContext.Delete(newStudent);
 
             // Find all classes a student is enrolled into. NOTE:!!!! DbContextFactory uses "UseLazyLoadingProxies"
             // to ensure that properties "Student" and "Course" are lazy loaded when their properties are accessed.
             // If that were not the case, then you've have to manually load the data based on ID values.
-            newStudent = EFCrud.FindSingle<Student, SchoolContext>(x => x.LastName == "Alonso" && x.FirstMidName == "Meredith");
-            IQueryable<Enrollment> enrolledList = EFCrud.FindMultiple<Enrollment, SchoolContext>(x => x.StudentID == newStudent.ID);
+            newStudent = schoolContext.FindSingle<Student, SchoolContext>(x => x.LastName == "Alonso" && x.FirstMidName == "Meredith");
+            IQueryable<Enrollment> enrolledList = schoolContext.FindMultiple<Enrollment, SchoolContext>(x => x.StudentID == newStudent.ID);
             Console.WriteLine("\r\nMeredith Alonso was inrolled in the following courses:");
             foreach (Enrollment enrolled in enrolledList.ToList())
             {
                 Console.WriteLine($"{enrolled.Course.Title} enrolled on {enrolled.Student.EnrollmentDate}");
             }
+
+            // Use the DbContext classes that were passed in using Dependency Injection
+            Car myCar = GenerateCar();
+            _dSuite.Cars.Add(myCar);
+            _dSuite.SaveChanges();
+            myCar.TraceInformation("Using DI created context");
+            Car foundMyCar = (from c in _dSuite.Cars where c.CarId == myCar.CarId select c).FirstOrDefault();
+            foundMyCar.TraceInformation("Example of how to use LINQ to find an entity");
+
+            // Use generic repository pattern (using dependency injection)
+            foundMyCar = _cars.GetById(myCar.CarId);
+            foundMyCar.TraceInformation("Found using generic repository");
+
+            // Remove the car to clean up the DB
+            _dSuite.Cars.Remove(myCar);
+            _dSuite.SaveChanges();
 
         }
 
@@ -156,11 +205,11 @@ namespace EntityFramework
             return (NewCar);
         }
 
-        public void FindMultipleUsingHelperClass()
+        public void FindMultipleUsingHelperClass(DSuiteContext dSuite)
         {
             // Demonstrate the deferred execution POWER of IQueryable!
             // Find a small list of cars that we don't need to page through.
-            IQueryable<Car> fordBunnies = EFCrud.FindMultiple<Car, DSuiteContext>((x) => x.Make == "Ford" && x.Model == "Bunny" && x.Year < 2006);
+            IQueryable<Car> fordBunnies = dSuite.FindMultiple<Car, DSuiteContext>((x) => x.Make == "Ford" && x.Model == "Bunny" && x.Year < 2006);
 
             // But I DO want to sort them too. Still no DB call here!
             fordBunnies = fordBunnies.OrderBy(bunny => bunny.Mileage);
@@ -171,14 +220,7 @@ namespace EntityFramework
 
         public void FindMultipleUsingLINQ()
         {
-            // The ConfigFactory static constructor reads the "MyProjectSettings" from appsettings.json
-            // or secrets.json and exposes the IUserConfiguration interface. We use that interface
-            // to retrieve the connection string mapped to the DatabaseName.
-            string ConnectionString = _requirements.UserConfiguration.ConnectionString("DSuite");
-
-            DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
-            optionsBuilder.UseSqlServer(ConnectionString);
-            DSuiteContext dSuiteContext = new DSuiteContext(optionsBuilder.Options);
+            DSuiteContext dSuiteContext = DBContextFactory.GetDbContext<DSuiteContext>();
 
             // Demonstrate the deferred execution POWER of IQueryable!
             // Find a small list of cars that we don't need to page through.
@@ -212,6 +254,13 @@ namespace EntityFramework
             DbContextOptionsBuilder<DSuiteContext> optionsBuilder = new DbContextOptionsBuilder<DSuiteContext>();
             optionsBuilder.UseSqlServer(ConnectionString);
             DSuiteContext dSuiteContext = new DSuiteContext(optionsBuilder.Options);
+
+            // NOTE: All the code above could be replaced with a single line of code. 
+            //       We write out the code here just to show you what's going on 
+            //       under the covers:
+            //
+            //          DSuiteContext dSuiteContext = DBContextFactory.GetDbContext<DSuiteContext>(); 
+
 
             // Equivalent CRUD using just linq
             Car newCar = GenerateCar();

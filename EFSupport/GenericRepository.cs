@@ -94,13 +94,16 @@ namespace EFSupport
         /// Registers any repository that was derived from GenericRepository
         /// </summary>
         /// <param name="services">IServiceCollection used for dependency injection</param>
-        public static void AddGenericRepositories(this IServiceCollection services)
+        /// <returns>IServiceCollection to allow fluent chaining</returns>
+        public static IServiceCollection AddGenericRepositories(this IServiceCollection services)
         {
             List<DependencyInjectionPair> all = typeof(IGenericRepositoryBase).GetAllTypesForDependencyInjection();
             foreach (DependencyInjectionPair pair in all)
             {
                 services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
             }
+
+            return (services);
         }
 
         /// <summary>
@@ -113,7 +116,8 @@ namespace EFSupport
         /// </summary>
         /// <param name="services">IServiceCollection</param>
         /// <param name="UseLazyLoading">true to allow lazy loading</param>
-        public static void AddAllDbContextTypes(this IServiceCollection services, bool UseLazyLoading = true)
+        /// <returns>IServiceCollection to allow fluent chaining</returns>
+        public static IServiceCollection AddAllDbContextTypes(this IServiceCollection services, bool UseLazyLoading = true)
         {
             // Find all the DbContext derived classes available
             List<Type> all = AppDomain.CurrentDomain.GetAssemblies().OrderBy(x => x.FullName).SelectMany(x => x.GetTypes())
@@ -140,9 +144,17 @@ namespace EFSupport
                    mymethod!.Invoke(services, new object[]{services, UseLazyLoading });
                }
             }
+
+           return (services);
         }
 
-        public static void AddAllDbContextAndRepositoryTypes(this IServiceCollection services, bool UseLazyLoading = true)
+        /// <summary>
+        /// Extension method to register all DbContext classes and generic repositories
+        /// </summary>
+        /// <param name="services">IServiceCollection</param>
+        /// <param name="UseLazyLoading">true if lazy loading of entities is desired</param>
+        /// <returns>IServiceCollection to allow fluent chaining</returns>
+        public static IServiceCollection AddAllDbContextAndRepositoryTypes(this IServiceCollection services, bool UseLazyLoading = true)
         {
             // Now that the DataAccessLayer is loaded, we can register all DbContext classes 
             // into the IOC container.
@@ -150,6 +162,8 @@ namespace EFSupport
 
             // Registers all XXXXXRepository classes that have be derived from GenericRepository
             services.AddGenericRepositories();
+
+            return (services);
         }
     }
 }

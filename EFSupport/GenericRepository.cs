@@ -16,24 +16,33 @@ namespace EFSupport
     {
 
     }
-    public interface IGenericRepository<T,TKey> : IGenericRepositoryBase
+    public interface IGenericRepository<T,TKey, TContext> : IGenericRepositoryBase  where T:class
     {
         public IEnumerable<T> GetAll();
         public T GetById(TKey id);
         public void Insert(T entity);
         public void Update(T entity);
         public void Delete(TKey id);
+        public TContext dbContext { get; set; }
+        public DbSet<T> entities { get; set; }
     }
 
-    public abstract class GenericRepository<T, TKey, TContext> : IGenericRepository<T, TKey> where T: class where TContext:DbContext
+    public abstract class GenericRepository<T, TKey, TContext> : IGenericRepository<T, TKey, TContext> where T: class where TContext:DbContext
     {
-        protected readonly TContext context;
-        protected DbSet<T> entities;
+        /// <summary>
+        /// DbContext used by entities in this repository. We expose this as public because
+        /// the class into which this repo is injected might have needs beyond what this simple
+        /// repo interface can provide. This way, that class can use the supplied DbContext
+        /// and DbSet to provide additional functionality not yet anticipated.
+        /// </summary>
+        public TContext dbContext { get; set; }
+        public DbSet<T> entities { get; set; }
+
         string errorMessage = string.Empty;
 
         public GenericRepository(TContext context)
         {
-            this.context = context;
+            this.dbContext = context;
             entities = context.Set<T>();
         }
         public IEnumerable<T> GetAll()
@@ -51,18 +60,19 @@ namespace EFSupport
             if (entity == null) throw new ArgumentNullException("entity");
 
             entities.Add(entity);
-            context.SaveChanges();
+            dbContext.SaveChanges();
         }
         public void Update(T entity)
         {
             if (entity == null) throw new ArgumentNullException("entity");
-            context.SaveChanges();
+
+            dbContext.SaveChanges();
         }
         public void Delete(TKey id)
         {
             T entity = GetById(id);
             entities.Remove(entity);
-            context.SaveChanges();
+            dbContext.SaveChanges();
         }
     }
 

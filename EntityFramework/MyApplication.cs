@@ -3,6 +3,7 @@
 using DataAccessLayer.CodeFirstModels;
 using DataAccessLayer.CodeFirstModels.Data;
 using DataAccessLayer.Models;
+using DataAccessLayer.Repositories;
 
 using EFSupport;
 
@@ -12,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DataAccessLayer.Repositories;
 
 namespace EntityFramework
 {
@@ -54,6 +54,8 @@ namespace EntityFramework
         /// <param name="schoolContext">DbContext for School database</param>
         /// <param name="cars">ICarRepository Example of using repository pattern</param>
         /// <param name="courses">ICourseRepository Example of using repository pattern</param>
+        /// <param name="students">IStudentsRepository Example of using repository pattern</param>
+        /// <param name="enrollments">IEnrollmentsRepository Example of using repository pattern</param>
         public MyApplication(IApplicationRequirements<MyApplication> requirements, 
             DSuiteContext dSuiteContext, 
             SchoolContext schoolContext, 

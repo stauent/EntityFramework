@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using System;
 using System.IO;
 
 
@@ -25,6 +26,11 @@ namespace ConfigurationAssistant
         }
     }
 
+    public class Bulder
+    {
+
+    }
+
     /// <summary>
     /// This class will configure a console application to use Dependency Injection and support console and debug logging
     /// </summary>
@@ -43,6 +49,7 @@ namespace ConfigurationAssistant
                     localServiceConfiguration?.Invoke(hostingContext, services);
 
                     services
+                        .AddIt<IUserConfiguration,Bulder>(x => new Bulder())
                         .AddTransient<TApp>()
                         .AddSingleton<IApplicationRequirements<TApp>, ApplicationRequirements<TApp>>()
                         .AddSingleton<IUserConfiguration> (sp =>
@@ -58,6 +65,14 @@ namespace ConfigurationAssistant
 
             return (hostBuilder);
         }
+
+        public static IServiceCollection AddIt<TService, TImplementation>(
+            this IServiceCollection services,
+            Func<IServiceProvider, TImplementation> implementationFactory)
+        {
+            return services;
+        }
+
 
         public static void ConfigureCustomLogging(HostBuilderContext hostingContext, ILoggingBuilder logging, IUserConfiguration userConfiguration)
         {

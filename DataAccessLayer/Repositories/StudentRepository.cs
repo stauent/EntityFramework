@@ -11,7 +11,7 @@ namespace DataAccessLayer.Repositories
     public interface IStudentRepository
     {
         Student GetById(int id);
-        IEnumerable<Student> GetAll();
+        IQueryable<Student> GetAll();
         void Insert(Student entity);
         void Update(Student entity);
         void Delete(Int32 id);

@@ -14,7 +14,7 @@ namespace DataAccessLayer.Repositories
     public interface ICourseRepository 
     {
         Course GetById(int id);
-        IEnumerable<Course> GetAll();
+        IQueryable<Course> GetAll();
         void Insert(Course entity);
         void Update(Course entity);
         void Delete(Int32 id);

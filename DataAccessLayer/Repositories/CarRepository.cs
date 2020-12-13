@@ -10,7 +10,7 @@ namespace DataAccessLayer.Repositories
     public interface ICarRepository 
     {
         Car GetById(int id);
-        IEnumerable<Car> GetAll();
+        IQueryable<Car> GetAll();
         void Insert(Car entity);
         void Update(Car entity);
         void Delete(Int32 id);

@@ -11,7 +11,7 @@ namespace DataAccessLayer.Repositories
     public interface IEnrollmentRepository
     {
         Enrollment GetById(int id);
-        IEnumerable<Enrollment> GetAll();
+        IQueryable<Enrollment> GetAll();
         void Insert(Enrollment entity);
         void Update(Enrollment entity);
         void Delete(Int32 id);

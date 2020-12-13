@@ -18,7 +18,7 @@ namespace EFSupport
     }
     public interface IGenericRepository<T,TKey, TContext> : IGenericRepositoryBase  where T:class
     {
-        public IEnumerable<T> GetAll();
+        public IQueryable<T> GetAll();
         public T GetById(TKey id);
         public void Insert(T entity);
         public void Update(T entity);
@@ -45,9 +45,9 @@ namespace EFSupport
             this.dbContext = context;
             entities = context.Set<T>();
         }
-        public IEnumerable<T> GetAll()
+        public IQueryable<T> GetAll()
         {
-            return entities.AsEnumerable();
+            return entities.AsQueryable();
         }
 
         public abstract T GetById(TKey id);
@@ -66,6 +66,7 @@ namespace EFSupport
         {
             if (entity == null) throw new ArgumentNullException("entity");
 
+            entities.Update(entity);
             dbContext.SaveChanges();
         }
         public void Delete(TKey id)

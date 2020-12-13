@@ -27,7 +27,7 @@ namespace EFSupport
         public DbSet<T> entities { get; set; }
     }
 
-    public abstract class GenericRepository<T, TKey, TContext> : IGenericRepository<T, TKey, TContext> where T: class where TContext:DbContext
+    public abstract class GenericRepository<T, TKey, TContext> : IGenericRepository<T, TKey, TContext> where T: class where TContext:DbContext, new()
     {
         /// <summary>
         /// DbContext used by entities in this repository. We expose this as public because
@@ -39,6 +39,10 @@ namespace EFSupport
         public DbSet<T> entities { get; set; }
 
         string errorMessage = string.Empty;
+
+        public GenericRepository():this(new TContext())
+        {
+        }
 
         public GenericRepository(TContext context)
         {

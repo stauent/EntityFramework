@@ -19,9 +19,6 @@ namespace DataAccessLayer.Repositories
 
     public class StudentRepository : GenericRepository<Student, int, SchoolContext>, IStudentRepository
     {
-        public StudentRepository(SchoolContext context) : base(context)
-        {
-        }
         public override Student GetById(int id)
         {
             return entities.SingleOrDefault(s => s.ID == id);

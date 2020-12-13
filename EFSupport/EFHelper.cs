@@ -127,7 +127,7 @@ namespace EFSupport
             return (realizedData);
         }
 
-        public static void DumpData<T>(this IEnumerable<T> ListOfData, string StartMessage = null) where T : class
+        public static void DumpData<T>(this IQueryable<T> ListOfData, string StartMessage = null) where T : class
         {
             if(StartMessage != null)
                 Console.WriteLine(StartMessage);

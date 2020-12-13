@@ -19,9 +19,6 @@ namespace DataAccessLayer.Repositories
 
     public class EnrollmentRepository : GenericRepository<Enrollment, int, SchoolContext>, IEnrollmentRepository
     {
-        public EnrollmentRepository(SchoolContext context) : base(context)
-        {
-        }
         public override Enrollment GetById(int id)
         {
             return entities.SingleOrDefault(s => s.EnrollmentID == id);

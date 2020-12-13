@@ -62,7 +62,8 @@ namespace EntityFramework
             ICarRepository cars, 
             ICourseRepository courses, 
             IStudentRepository students, 
-            IEnrollmentRepository enrollments)
+            IEnrollmentRepository enrollments
+            )
         {
             _requirements = requirements;
             _dSuite = dSuiteContext;
@@ -221,7 +222,7 @@ namespace EntityFramework
         {
             // Demonstrate the deferred execution POWER of IQueryable!
             // Find a small list of cars that we don't need to page through.
-            IQueryable<Car> fordBunnies = dSuite.FindMultiple<Car, DSuiteContext>((x) => x.Make == "Ford" && x.Model == "Bunny" && x.Year < 2006);
+            IQueryable<Car> fordBunnies = dSuite.FindMultiple<Car, DSuiteContext>((x) => x.Make == "Ford" && x.Model == "Bunny" && x.Year < 2006,x => x.Year);
 
             // But I DO want to sort them too. Still no DB call here!
             fordBunnies = fordBunnies.OrderBy(bunny => bunny.Mileage);

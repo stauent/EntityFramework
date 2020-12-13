@@ -18,9 +18,6 @@ namespace DataAccessLayer.Repositories
 
     public class CarRepository : GenericRepository<Car, int, DSuiteContext>, ICarRepository
     {
-        public CarRepository(DSuiteContext context) : base(context)
-        {
-        }
         public override Car GetById(int id)
         {
             return entities.SingleOrDefault(s => s.CarId == id);

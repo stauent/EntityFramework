@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -16,18 +17,27 @@ namespace EFSupport
     {
 
     }
-    public interface IGenericRepository<T,TKey, TContext> : IGenericRepositoryBase  where T:class
+    public interface IDataRepository<T,TKey, TContext> : IGenericRepositoryBase  where T:class
     {
         public IQueryable<T> GetAll();
         public T GetById(TKey id);
         public void Insert(T entity);
         public void Update(T entity);
         public void Delete(TKey id);
-        public TContext dbContext { get; set; }
-        public DbSet<T> entities { get; set; }
+        public TContext _context { get; set; }
+        public DbSet<T> _entities { get; set; }
+
+
+        public IList<T> GetAll(params Expression<Func<T, object>>[] navigationProperties);
+        public IList<T> GetList(Expression<Func<T, bool>> where, params Expression<Func<T, object>>[] navigationProperties);
+        public T GetSingle(Expression<Func<T, bool>> where, params Expression<Func<T, object>>[] navigationProperties);
+        public void Add(params T[] items);
+        public void Update(params T[] items);
+        public void Remove(params T[] items);
+        public void CallStoredProc(string name, params Tuple<string, string>[] parameters);
     }
 
-    public abstract class GenericRepository<T, TKey, TContext> : IGenericRepository<T, TKey, TContext> where T: class where TContext:DbContext, new()
+    public abstract class EFGenericRepository<T, TKey, TContext> : IDataRepository<T, TKey, TContext> where T: class where TContext:DbContext, new()
     {
         /// <summary>
         /// DbContext used by entities in this repository. We expose this as public because
@@ -35,23 +45,23 @@ namespace EFSupport
         /// repo interface can provide. This way, that class can use the supplied DbContext
         /// and DbSet to provide additional functionality not yet anticipated.
         /// </summary>
-        public TContext dbContext { get; set; }
-        public DbSet<T> entities { get; set; }
+        public TContext _context { get; set; }
+        public DbSet<T> _entities { get; set; }
 
         string errorMessage = string.Empty;
 
-        public GenericRepository():this(new TContext())
+        public EFGenericRepository():this(new TContext())
         {
         }
 
-        public GenericRepository(TContext context)
+        public EFGenericRepository(TContext context)
         {
-            this.dbContext = context;
-            entities = context.Set<T>();
+            this._context = context;
+            _entities = context.Set<T>();
         }
         public IQueryable<T> GetAll()
         {
-            return entities.AsQueryable();
+            return _entities.AsQueryable();
         }
 
         public abstract T GetById(TKey id);
@@ -63,21 +73,86 @@ namespace EFSupport
         {
             if (entity == null) throw new ArgumentNullException("entity");
 
-            entities.Add(entity);
-            dbContext.SaveChanges();
+            _entities.Add(entity);
+            _context.SaveChanges();
         }
         public void Update(T entity)
         {
             if (entity == null) throw new ArgumentNullException("entity");
 
-            entities.Update(entity);
-            dbContext.SaveChanges();
+            _entities.Update(entity);
+            _context.SaveChanges();
         }
         public void Delete(TKey id)
         {
             T entity = GetById(id);
-            entities.Remove(entity);
-            dbContext.SaveChanges();
+            _entities.Remove(entity);
+            _context.SaveChanges();
+        }
+
+        public void Add(params T[] items)
+        {
+            foreach (var item in items)
+            {
+                _context.Entry(item).State = EntityState.Added;
+            }
+            _context.SaveChanges();
+        }
+
+        public void CallStoredProc(string name, params Tuple<string, string>[] parameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<T> GetAll(params Expression<Func<T, object>>[] navigationProperties)
+        {
+            IQueryable<T> dbQuery = _entities;
+
+            foreach (var navigationProperty in navigationProperties)
+            {
+                dbQuery = dbQuery.Include<T, object>(navigationProperty);
+            }
+            return dbQuery.ToList<T>();
+        }
+
+        public IList<T> GetList(Expression<Func<T, bool>> where, params Expression<Func<T, object>>[] navigationProperties)
+        {
+            IQueryable<T> dbQuery = _entities;
+
+            foreach (Expression<Func<T, object>> navigationProperty in navigationProperties)
+            {
+                dbQuery = dbQuery.Include<T, object>(navigationProperty);
+            }
+            return dbQuery.Where(where).ToList<T>();
+        }
+
+        public virtual T GetSingle(Expression<Func<T, bool>> where, params Expression<Func<T, object>>[] navigationProperties)
+        {
+            IQueryable<T> dbQuery = _entities;
+            foreach (Expression<Func<T, object>> navigationProperty in navigationProperties)
+            {
+                dbQuery = dbQuery.Include<T, object>(navigationProperty);
+            }
+            return dbQuery.FirstOrDefault(where);
+
+        }
+
+        public void Remove(params T[] items)
+        {
+            foreach (T item in items)
+            {
+                _context.Entry(item).State = EntityState.Deleted;
+            }
+            _context.SaveChanges();
+        }
+
+        public void Update(params T[] items)
+        {
+            foreach (T item in items)
+            {
+                _context.Entry(item).State = EntityState.Modified;
+            }
+            _context.SaveChanges();
         }
     }
 
@@ -89,7 +164,22 @@ namespace EFSupport
 
     public static class TypeExtensions
     {
-        public static List<DependencyInjectionPair> GetAllTypesForDependencyInjection(this Type InterfaceType)
+        public static List<DependencyInjectionPair> GetGenericReposForDependencyInjection(this Type InterfaceType)
+        {
+            List<DependencyInjectionPair> names = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
+                .Where(x => !x.IsInterface && !x.IsAbstract && InterfaceType.IsAssignableFrom(x) )
+                .Select(x =>
+                {
+                    Type[] interfaces = x.GetInterfaces();
+                    Type serviceInterface = (from si in interfaces where si != InterfaceType select si).FirstOrDefault();
+                    return new DependencyInjectionPair { ServiceInterface = serviceInterface, ServiceImplementation = x };
+                })
+                .ToList();
+
+            return (names);
+        }
+
+        public static List<DependencyInjectionPair> GetRepoInterfacesForDependencyInjection(this Type InterfaceType)
         {
             List<DependencyInjectionPair> names = AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
                 .Where(x => InterfaceType.IsAssignableFrom(x) && !x.IsInterface && !x.IsAbstract )
@@ -106,13 +196,19 @@ namespace EFSupport
 
 
         /// <summary>
-        /// Registers any repository that was derived from GenericRepository
+        /// Registers any repository that was derived from EFGenericRepository
         /// </summary>
         /// <param name="services">IServiceCollection used for dependency injection</param>
         /// <returns>IServiceCollection to allow fluent chaining</returns>
         public static IServiceCollection AddGenericRepositories(this IServiceCollection services)
         {
-            List<DependencyInjectionPair> all = typeof(IGenericRepositoryBase).GetAllTypesForDependencyInjection();
+            List<DependencyInjectionPair> genericRepos = typeof(IGenericRepositoryBase).GetGenericReposForDependencyInjection();
+            foreach (DependencyInjectionPair pair in genericRepos)
+            {
+                services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
+            }
+
+            List<DependencyInjectionPair> all = typeof(IGenericRepositoryBase).GetRepoInterfacesForDependencyInjection();
             foreach (DependencyInjectionPair pair in all)
             {
                 services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
@@ -175,7 +271,7 @@ namespace EFSupport
             // into the IOC container.
             services.AddAllDbContextTypes(UseLazyLoading);
 
-            // Registers all XXXXXRepository classes that have be derived from GenericRepository
+            // Registers all XXXXXRepository classes that have be derived from EFGenericRepository
             services.AddGenericRepositories();
 
             return (services);

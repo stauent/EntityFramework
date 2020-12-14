@@ -126,7 +126,7 @@ namespace EntityFramework
 
             // Now that the DataAccessLayer is loaded, we can register all DbContext classes 
             // into the IOC container and also registers all XXXXXRepository classes
-            // that have be derived from GenericRepository.
+            // that have be derived from EFGenericRepository.
             services.AddAllDbContextAndRepositoryTypes(true);
         }
     }

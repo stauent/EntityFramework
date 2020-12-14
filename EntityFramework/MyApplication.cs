@@ -27,13 +27,13 @@ namespace EntityFramework
     //       Because it's difficult to mock out a DbContext, EF Core supports "UseInMemoryDatabase"
     //       https://entityframeworkcore.com/knowledge-base/47553878/mocking-entity-framework-core-context
     //
-    //       In order for the GenericRepository to be "really" useful, all DbSet entities should use
+    //       In order for the EFGenericRepository to be "really" useful, all DbSet entities should use
     //       the same key type (uniqueidentifier or int) and all classes should use the same key
-    //       property name of "id". Then, GenericRepository would not have to be
+    //       property name of "id". Then, EFGenericRepository would not have to be
     //       an abstract class and could a generic implementation of GetById.
     //       This would also simplify the registration of the all repositories because then
     //       we could use:
-    //             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+    //             services.AddScoped(typeof(IDataRepository<>), typeof(EFGenericRepository<>));
     //
     public class MyApplication 
     {
@@ -45,6 +45,7 @@ namespace EntityFramework
         private readonly ICourseRepository _courses;
         private readonly IStudentRepository _students;
         private readonly IEnrollmentRepository _enrollments;
+        private readonly IDataRepository<Student, int, SchoolContext> _genericStudentDataRepository;
 
         /// <summary>
         /// Application initialization.
@@ -62,7 +63,8 @@ namespace EntityFramework
             ICarRepository cars, 
             ICourseRepository courses, 
             IStudentRepository students, 
-            IEnrollmentRepository enrollments
+            IEnrollmentRepository enrollments,
+            IDataRepository<Student, int, SchoolContext> genericStudentDataRepository
             )
         {
             _requirements = requirements;
@@ -72,6 +74,9 @@ namespace EntityFramework
             _courses = courses;
             _students = students;
             _enrollments = enrollments;
+
+            // Same as the _students interface, except it's an open generic type
+            _genericStudentDataRepository = genericStudentDataRepository;
 
             EFCrud.InitializeLogger(_requirements.ApplicationLogger);
             EFHelper.InitializeLogger(_requirements.ApplicationLogger);
@@ -191,6 +196,18 @@ namespace EntityFramework
             _dSuite.Cars.Remove(myCar);
             _dSuite.SaveChanges();
 
+            // Use the open generic type provided by dependency injection for the "school" repo
+            Student Bobby = new Student { FirstMidName = "Bobby", LastName = "Simpson", EnrollmentDate = DateTime.Parse("2010-08-01") };
+            _genericStudentDataRepository.Insert(Bobby);
+            Bobby.TraceInformation("New student inserted using dependency injection open generic");
+            Student foundStudent = _genericStudentDataRepository.GetById(Bobby.ID);
+            foundStudent.TraceInformation("Found student using dependency injection open generic");
+            _genericStudentDataRepository.Delete(Bobby.ID);
+            foundStudent = _genericStudentDataRepository.GetById(Bobby.ID);
+            if (foundStudent == null)
+                Bobby.TraceInformation("Successfully deleted student");
+            else
+                Bobby.TraceInformation("Failed to deleted student");
         }
 
         public static async Task PopulateDummyCars(int NumberOfCars)

@@ -34,6 +34,9 @@ namespace DataAccessLayer.Repositories
         void Update(params Car[] items);
     }
 
+    /// <summary>
+    /// Can't use IntIdRepositoryBase as base class because the key field is uniquely named
+    /// </summary>
     public class CarRepository : EFGenericRepository<Car, int, DSuiteContext>, ICarRepository
     {
         public override Car GetById(int id)

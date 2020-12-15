@@ -36,12 +36,7 @@ namespace DataAccessLayer.Repositories
         void Update(params Student[] items);
     }
 
-    public class StudentRepository : EFGenericRepository<Student, int, SchoolContext>, IStudentRepository
+    public class StudentRepository : IntIdRepositoryBase<Student, SchoolContext>, IStudentRepository
     {
-        public override Student GetById(int id)
-        {
-            return _entities.SingleOrDefault(s => s.ID == id);
-        }
     }
-
 }

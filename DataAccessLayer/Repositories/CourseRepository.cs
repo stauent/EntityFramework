@@ -38,6 +38,9 @@ namespace DataAccessLayer.Repositories
         void Update(params Course[] items);
     }
 
+    /// <summary>
+    /// Can't use IntIdRepositoryBase as base class because the key field is uniquely named
+    /// </summary>
     public class CourseRepository : EFGenericRepository<Course, int, SchoolContext>, ICourseRepository
     {
         public override Course GetById(int id)

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
+
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EFSupport
@@ -170,8 +169,17 @@ namespace EFSupport
                 .Where(x => !x.IsInterface && !x.IsAbstract && InterfaceType.IsAssignableFrom(x) )
                 .Select(x =>
                 {
+                    Type serviceInterface = null;
+                    if (x.IsGenericType)
+                    {
+                        if (x.BaseType.IsGenericType)
+                        {
+                            serviceInterface = x.BaseType.GetGenericTypeDefinition();
+                            return new DependencyInjectionPair { ServiceInterface = serviceInterface, ServiceImplementation = x };
+                        }
+                    }
                     Type[] interfaces = x.GetInterfaces();
-                    Type serviceInterface = (from si in interfaces where si != InterfaceType select si).FirstOrDefault();
+                    serviceInterface = (from si in interfaces where si != InterfaceType select si).FirstOrDefault();
                     return new DependencyInjectionPair { ServiceInterface = serviceInterface, ServiceImplementation = x };
                 })
                 .ToList();
@@ -205,13 +213,15 @@ namespace EFSupport
             List<DependencyInjectionPair> genericRepos = typeof(IGenericRepositoryBase).GetGenericReposForDependencyInjection();
             foreach (DependencyInjectionPair pair in genericRepos)
             {
-                services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
+                if (pair.ServiceInterface != null && pair.ServiceImplementation != null) 
+                    services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
             }
 
             List<DependencyInjectionPair> all = typeof(IGenericRepositoryBase).GetRepoInterfacesForDependencyInjection();
             foreach (DependencyInjectionPair pair in all)
             {
-                services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
+                if (pair.ServiceInterface != null && pair.ServiceImplementation != null)
+                    services.AddScoped(pair.ServiceInterface, pair.ServiceImplementation);
             }
 
             return (services);

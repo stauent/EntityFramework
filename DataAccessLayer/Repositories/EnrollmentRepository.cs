@@ -36,6 +36,9 @@ namespace DataAccessLayer.Repositories
         void Update(params Enrollment[] items);
     }
 
+    /// <summary>
+    /// Can't use IntIdRepositoryBase as base class because the key field is uniquely named
+    /// </summary>
     public class EnrollmentRepository : EFGenericRepository<Enrollment, int, SchoolContext>, IEnrollmentRepository
     {
         public override Enrollment GetById(int id)

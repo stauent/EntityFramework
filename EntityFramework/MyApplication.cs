@@ -156,7 +156,7 @@ namespace EntityFramework
             await schoolContext.Create(newStudent);
             Course newCourse = new Course { CourseID = 5022, Title = "Advanced C#", Credits = 4 };
             await schoolContext.Create(newCourse);
-            Enrollment newEnrollment = new Enrollment { StudentID = newStudent.ID, CourseID = newCourse.CourseID, Grade = Grade.A };
+            Enrollment newEnrollment = new Enrollment { StudentID = newStudent.Id, CourseID = newCourse.CourseID, Grade = Grade.A };
             await schoolContext.Create(newEnrollment);
 
             // Now find a specific enrollment. 
@@ -173,7 +173,7 @@ namespace EntityFramework
             // to ensure that properties "Student" and "Course" are lazy loaded when their properties are accessed.
             // If that were not the case, then you've have to manually load the data based on ID values.
             newStudent = schoolContext.FindSingle<Student, SchoolContext>(x => x.LastName == "Alonso" && x.FirstMidName == "Meredith");
-            IQueryable<Enrollment> enrolledList = schoolContext.FindMultiple<Enrollment, SchoolContext>(x => x.StudentID == newStudent.ID);
+            IQueryable<Enrollment> enrolledList = schoolContext.FindMultiple<Enrollment, SchoolContext>(x => x.StudentID == newStudent.Id);
             Console.WriteLine("\r\nMeredith Alonso was inrolled in the following courses:");
             foreach (Enrollment enrolled in enrolledList.ToList())
             {
@@ -200,14 +200,29 @@ namespace EntityFramework
             Student Bobby = new Student { FirstMidName = "Bobby", LastName = "Simpson", EnrollmentDate = DateTime.Parse("2010-08-01") };
             _genericStudentDataRepository.Insert(Bobby);
             Bobby.TraceInformation("New student inserted using dependency injection open generic");
-            Student foundStudent = _genericStudentDataRepository.GetById(Bobby.ID);
+            Student foundStudent = _genericStudentDataRepository.GetById(Bobby.Id);
             foundStudent.TraceInformation("Found student using dependency injection open generic");
-            _genericStudentDataRepository.Delete(Bobby.ID);
-            foundStudent = _genericStudentDataRepository.GetById(Bobby.ID);
+            _genericStudentDataRepository.Delete(Bobby.Id);
+            foundStudent = _genericStudentDataRepository.GetById(Bobby.Id);
             if (foundStudent == null)
                 Bobby.TraceInformation("Successfully deleted student");
             else
                 Bobby.TraceInformation("Failed to deleted student");
+
+            // Perform the same action with the IStudentRepository
+            Bobby = new Student { FirstMidName = "Bobby", LastName = "Simpson", EnrollmentDate = DateTime.Parse("2010-08-01") };
+            _students.Insert(Bobby);
+            Bobby.TraceInformation("New student inserted using dependency injection open generic");
+            foundStudent = _students.GetById(Bobby.Id);
+            foundStudent.TraceInformation("Found student using dependency injection open generic");
+            _students.Delete(Bobby.Id);
+            foundStudent = _students.GetById(Bobby.Id);
+            if (foundStudent == null)
+                Bobby.TraceInformation("Successfully deleted student");
+            else
+                Bobby.TraceInformation("Failed to deleted student");
+
+
         }
 
         public static async Task PopulateDummyCars(int NumberOfCars)
